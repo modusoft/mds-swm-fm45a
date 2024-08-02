@@ -1,0 +1,149 @@
+component swm_fm45a_jog "SWM FM45A jog functions";
+
+author "Sascha Ittner";
+license "GPL";
+
+option singleton yes;
+
+pin in bit x_homed;
+pin in bit y_homed;
+pin in bit z_homed;
+
+pin in bit btn_x;
+pin in bit btn_y;
+pin in bit btn_z;
+pin in bit btn_1_00;
+pin in bit btn_0_10;
+pin in bit btn_0_01;
+pin in bit btn_set_x;
+pin in bit btn_set_y;
+pin in bit btn_set_z;
+
+pin out bit ena_x;
+pin out bit ena_y;
+pin out bit ena_z;
+
+pin out bit sel_1_00;
+pin out bit sel_0_10;
+pin out bit sel_0_01;
+
+pin out bit touch_x;
+pin out bit touch_y;
+pin out bit touch_z;
+
+pin in float scale_1_00;
+pin in float scale_0_10;
+pin in float scale_0_01;
+pin out float scale;
+
+option data swm_jog_data;
+option extra_setup;
+
+function _;
+
+;;
+
+// 1s
+#define TOUCH_DELAY 1000000000LL
+
+#define SCALE_0_01 0
+#define SCALE_0_10 1
+#define SCALE_1_00 2
+
+typedef struct {
+  int current_scale;
+
+  long long touch_x_timer;
+  long long touch_y_timer;
+  long long touch_z_timer;
+
+} swm_jog_data;
+
+EXTRA_SETUP() {
+  data.current_scale = SCALE_0_01;
+
+  data.touch_x_timer = 0;
+  data.touch_y_timer = 0;
+  data.touch_z_timer = 0;
+
+  return 0;
+}
+
+FUNCTION(_) {
+  // map select inputs to enum value
+  if (btn_0_01) {
+    data.current_scale = SCALE_0_01;
+  }
+  if (btn_0_10) {
+    data.current_scale = SCALE_0_10;
+  }
+  if (btn_1_00) {
+    data.current_scale = SCALE_1_00;
+  }
+
+  // scale muxer
+  switch(data.current_scale) {
+    case SCALE_0_01:
+      scale = scale_0_01;
+      sel_0_01 = 1;
+      sel_0_10 = 0;
+      sel_1_00 = 0;
+      break;
+    case SCALE_0_10:
+      scale = scale_0_10;
+      sel_0_01 = 0;
+      sel_0_10 = 1;
+      sel_1_00 = 0;
+      break;
+    case SCALE_1_00:
+      scale = scale_1_00;
+      sel_0_01 = 0;
+      sel_0_10 = 0;
+      sel_1_00 = 1;
+      break;
+    default:
+      scale = 0.0;
+      sel_0_01 = 0;
+      sel_0_10 = 0;
+      sel_1_00 = 0;
+  }
+
+  // enable jogging only if axis is homed
+  ena_x = x_homed && btn_x;
+  ena_y = y_homed && btn_y;
+  ena_z = z_homed && btn_z;
+
+  // touch putton handling
+  // check for minimum press time
+  if (!btn_set_x) {
+    data.touch_x_timer = 0;
+  }
+  if (data.touch_x_timer < TOUCH_DELAY) {
+    data.touch_x_timer += period;
+    touch_x = 0;
+  } else {
+    touch_x = 1;
+  }
+
+  if (!btn_set_y) {
+    data.touch_y_timer = 0;
+  }
+  if (data.touch_y_timer < TOUCH_DELAY) {
+    data.touch_y_timer += period;
+    touch_y = 0;
+  } else {
+    touch_y = 1;
+  }
+
+  if (!btn_set_z) {
+    data.touch_z_timer = 0;
+  }
+  if (data.touch_z_timer < TOUCH_DELAY) {
+    data.touch_z_timer += period;
+    touch_z = 0;
+  } else {
+    touch_z = 1;
+  }
+
+}
+

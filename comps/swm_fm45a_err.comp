@@ -1,0 +1,93 @@
+component swm_fm45a_err "SWM FM45A error handling";
+
+author "Sascha Ittner";
+license "GPL";
+
+option singleton yes;
+
+pin in u32 ec_slaves_responding;
+pin in bit ec_link_up;
+pin in bit ec_all_op;
+
+pin in bit voltage_on;
+pin in bit motor_fault;
+pin out bit emc_enable;
+pin in bit emc_on;
+
+option data swm_err_data;
+option extra_setup;
+
+function _;
+
+;;
+
+#define ETHERCAT_SLAVES 9
+
+typedef struct {
+  hal_bit_t ec_slavecnt_fault_disp;
+  hal_bit_t ec_link_fault_disp;
+  hal_bit_t ec_op_fault_disp;
+  hal_bit_t motor_fault_disp;
+
+} swm_err_data;
+
+EXTRA_SETUP() {
+  data.ec_slavecnt_fault_disp = 0;
+  data.ec_link_fault_disp = 0;
+  data.ec_op_fault_disp = 0;
+  data.motor_fault_disp = 0;
+
+  return 0;
+}
+
+FUNCTION(_) {
+  // enable lcnc if control voltage is on
+  // this will be reset if an error occurs
+  emc_enable = voltage_on;
+  if (!emc_on) {
+    data.ec_slavecnt_fault_disp = 0;
+    data.ec_link_fault_disp = 0;
+    data.ec_op_fault_disp = 0;
+    data.motor_fault_disp = 0;
+
+    return;
+  }
+
+  // check for responding ethercat slave count
+  if (ec_slaves_responding != ETHERCAT_SLAVES) {
+    emc_enable = 0;
+    if (!data.ec_slavecnt_fault_disp) {
+      data.ec_slavecnt_fault_disp = 1;
+      rtapi_print_msg(RTAPI_MSG_ERR, "EtherCAT: %d Slaves found, but %d expected!\n", ec_slaves_responding, ETHERCAT_SLAVES);
+    }
+  }
+
+  // check if ethercat link is up
+  if (!ec_link_up) {
+    emc_enable = 0;
+    if (!data.ec_link_fault_disp) {
+      data.ec_link_fault_disp = 1;
+      rtapi_print_msg(RTAPI_MSG_ERR, "EtherCAT: Link down!\n");
+    }
+  }
+
+  // check if all slaves are operational
+  if (!ec_all_op) {
+    emc_enable = 0;
+    if (!data.ec_op_fault_disp) {
+      data.ec_op_fault_disp = 1;
+      rtapi_print_msg(RTAPI_MSG_ERR, "EtherCAT: Not all slaves in OP mode!\n");
+    }
+  }
+
+  // check for motor fault
+  if (motor_fault) {
+    emc_enable = 0;
+    if (!data.motor_fault_disp) {
+      data.motor_fault_disp = 1;
+      rtapi_print_msg(RTAPI_MSG_ERR, "Spindle/Coolant motor fault!\n");
+    }
+  }
+
+}
+

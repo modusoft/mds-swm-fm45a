@@ -1,0 +1,120 @@
+component swm_fm45a_motspeed "SWM FM45A motor speed selection";
+
+author "Sascha Ittner";
+license "GPL";
+
+option singleton yes;
+
+pin in bit spindle_off;
+
+pin in bit req;
+pin out bit ack;
+
+pin in bit speed_h;
+pin in bit speed_l;
+
+pin out bit out_h;
+pin out bit out_l;
+
+option data swm_motspeed_data;
+option extra_setup;
+
+function _;
+
+;;
+
+// 100ms
+#define SPEED_SETUP_DELAY 100000000LL
+
+// 1s
+#define SPEED_CHANGE_DELAY 1000000000LL
+
+#define SPEED_OFF 0
+#define SPEED_LO  1
+#define SPEED_HI  2
+
+typedef struct {
+  int speed;
+  int speed_ack;
+  long long setup_timer;
+  long long lo_timer;
+  long long hi_timer;
+} swm_motspeed_data;
+
+
+EXTRA_SETUP() {
+  data.speed = SPEED_OFF;
+  data.speed_ack = SPEED_OFF;
+  data.setup_timer = 0;
+  data.lo_timer = 0;
+  data.hi_timer = 0;
+
+  return 0;
+}
+
+FUNCTION(_) {
+  // update timer variables
+  if (data.setup_timer > 0) {
+    data.setup_timer -= period;
+  }
+  if (data.lo_timer > 0) {
+    data.lo_timer -= period;
+  }
+  if (data.hi_timer > 0) {
+    data.hi_timer -= period;
+  }
+
+  // map select inputs to enum value
+  if (req) {
+    data.speed = SPEED_OFF;
+    if (speed_l) {
+      data.speed = SPEED_LO;
+    }
+    if (speed_h) {
+      data.speed = SPEED_HI;
+    }
+  }
+
+  // set acknowledge after setup time
+  if (data.speed != data.speed_ack) {
+    data.setup_timer = SPEED_SETUP_DELAY;
+  }
+  if (data.setup_timer > 0) {
+    ack = 0;
+  } else {
+    ack = req;
+  }
+
+  // select speed, wait for spindle stop
+  // keep dead time on change
+  if (spindle_off) {
+    out_l = 0;
+    out_h = 0;
+    switch (data.speed) {
+      case SPEED_LO:
+        if (data.hi_timer <= 0) {
+          data.speed_ack = SPEED_LO;
+          out_l = 1;
+        }
+        break;
+      case SPEED_HI:
+        if (data.lo_timer <= 0) {
+          data.speed_ack = SPEED_HI;
+          out_h = 1;
+        }
+        break;
+      default:
+        data.speed_ack = data.speed;
+    }
+  }
+
+  // reset timers
+  if (out_l) {
+    data.lo_timer = SPEED_CHANGE_DELAY;
+  }
+  if (out_h) {
+    data.hi_timer = SPEED_CHANGE_DELAY;
+  }
+
+}
+

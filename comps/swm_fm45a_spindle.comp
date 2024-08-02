@@ -1,0 +1,93 @@
+component swm_fm45a_spindle "SWM FM45A spindle direction control";
+
+author "Sascha Ittner";
+license "GPL";
+
+option singleton yes;
+
+pin in bit spindle_on;
+pin in float spindle_speed;
+
+pin out bit spindle_at_speed;
+pin out bit spindle_is_off;
+
+pin in bit gearsel_ready;
+
+pin out bit out_cw;
+pin out bit out_ccw;
+
+option data swm_spindle_data;
+option extra_setup;
+
+function _;
+
+;;
+
+// 1.5s
+#define DIR_CHANGE_DELAY 1500000000LL
+
+// 500ms
+#define AT_SPEED_DELAY 500000000LL
+
+// 100ms
+#define IS_OFF_DELAY 100000000LL
+
+typedef struct {
+  long long cw_timer;
+  long long ccw_timer;
+  long long at_speed_timer;
+  long long is_off_timer;
+} swm_spindle_data;
+
+
+EXTRA_SETUP() {
+  data.cw_timer = 0;
+  data.ccw_timer = 0;
+  data.at_speed_timer = AT_SPEED_DELAY;
+  data.is_off_timer = IS_OFF_DELAY;
+
+  return 0;
+}
+
+FUNCTION(_) {
+  // update timer variables
+  if (data.cw_timer > 0) {
+    data.cw_timer -= period;
+  }
+  if (data.ccw_timer > 0) {
+    data.ccw_timer -= period;
+  }
+  if (data.at_speed_timer > 0) {
+    data.at_speed_timer -= period;
+  }
+  if (data.is_off_timer > 0) {
+    data.is_off_timer -= period;
+  }
+
+  // select direction
+  // keep dead time on direction change
+  out_cw = 0;
+  out_ccw = 0;
+  if (spindle_on && gearsel_ready) {
+    if (spindle_speed > 0.0 && data.ccw_timer <= 0) {
+      data.cw_timer = DIR_CHANGE_DELAY;
+      out_cw = 1;
+    }
+    if (spindle_speed < 0.0 && data.cw_timer <= 0) {
+      data.ccw_timer = DIR_CHANGE_DELAY;
+      out_ccw = 1;
+    }
+  }
+
+  // reset is-off and at-speed timers
+  if (out_cw || out_cw) {
+    data.is_off_timer = IS_OFF_DELAY;
+  } else {
+    data.at_speed_timer = AT_SPEED_DELAY;
+  }
+
+  // update ouput flags
+  spindle_at_speed = (data.at_speed_timer > 0) ? 0 : 1;
+  spindle_is_off = (data.is_off_timer > 0) ? 0 : 1;
+}
+

@@ -1,0 +1,72 @@
+component swm_fm45a_transm "SWM FM45A transmission interface";
+
+author "Sascha Ittner";
+license "GPL";
+
+option singleton yes;
+
+pin in bit req;
+pin out bit ack;
+
+pin in bit ui_ack;
+pin in bit hw_ack;
+
+pin in bit transm_h;
+pin in bit transm_l;
+pin in bit transm_1;
+pin in bit transm_2;
+pin in bit transm_3;
+
+pin out bit ui_h;
+pin out bit ui_l;
+pin out bit ui_1;
+pin out bit ui_2;
+pin out bit ui_3;
+
+option data swm_transm_data;
+option extra_setup;
+
+function _;
+
+;;
+
+// 500ms
+#define BLINK_PERIOD 500000000LL
+
+typedef struct {
+  int blink_mask;
+  long long blink_timer;
+} swm_transm_data;
+
+
+EXTRA_SETUP() {
+  data.blink_mask = 1;
+  data.blink_timer = 0;
+
+  return 0;
+}
+
+FUNCTION(_) {
+  // ACK by PyVCP and pendant button
+  ack = ui_ack || hw_ack;
+
+  // blink LEDs on pending request
+  if (req) {
+    data.blink_timer -= period;
+    if (data.blink_timer < 0) {
+      data.blink_timer += (BLINK_PERIOD >> 1);
+      data.blink_mask = !data.blink_mask;
+    }
+  } else {
+    data.blink_mask = 1;
+    data.blink_timer = 0;
+  }
+
+  // mask LED outputs with blink flag
+  ui_h = transm_h & data.blink_mask;
+  ui_l = transm_l & data.blink_mask;
+  ui_1 = transm_1 & data.blink_mask;
+  ui_2 = transm_2 & data.blink_mask;
+  ui_3 = transm_3 & data.blink_mask;
+}
+

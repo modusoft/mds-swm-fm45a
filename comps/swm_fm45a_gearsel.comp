@@ -1,0 +1,188 @@
+component swm_fm45a_gearsel "SWM FM45A gear selection";
+
+author "Sascha Ittner";
+license "GPL";
+
+option singleton yes;
+
+pin in s32 method;
+
+pin in bit mode_is_auto;
+
+pin in bit spindle_on;
+pin in float spindle_speed;
+
+pin out s32 speed_target;
+pin out s32 speed_result;
+
+pin out bit mot_speed_h;
+pin out bit mot_speed_l;
+
+pin out bit transm_h;
+pin out bit transm_l;
+
+pin out bit transm_1;
+pin out bit transm_2;
+pin out bit transm_3;
+
+pin out bit mot_speed_req;
+pin in bit mot_speed_ack;
+pin out bit transm_req;
+pin in bit transm_ack;
+
+pin out bit ready;
+
+option data swm_gearsel_data;
+option extra_setup;
+
+function _;
+
+;;
+
+typedef struct {
+  int mode_is_auto_old;
+  int state;
+  int state_mot_speed;
+  int state_transm;
+  int state_ack;
+} swm_gearsel_data;
+
+#define MOT_SPEED_L (1 << 0)
+#define MOT_SPEED_H (1 << 1)
+#define TRANSM_L    (1 << 2)
+#define TRANSM_H    (1 << 3)
+#define TRANSM_1    (1 << 4)
+#define TRANSM_2    (1 << 5)
+#define TRANSM_3    (1 << 6)
+
+#define MOT_SPEED_MASK (MOT_SPEED_L | MOT_SPEED_H)
+#define TRANSM_MASK (TRANSM_L | TRANSM_H | TRANSM_1 | TRANSM_2 | TRANSM_3)
+
+typedef struct {
+  int rpm;
+  int state;
+} speed_map_t;
+
+// speed to state mapping
+const speed_map_t speed_map[] = {
+  {   75, MOT_SPEED_L | TRANSM_L | TRANSM_1 },
+  {  150, MOT_SPEED_H | TRANSM_L | TRANSM_1 },
+  {  180, MOT_SPEED_L | TRANSM_L | TRANSM_2 },
+  {  280, MOT_SPEED_L | TRANSM_L | TRANSM_3 },
+  {  360, MOT_SPEED_H | TRANSM_L | TRANSM_2 },
+  {  560, MOT_SPEED_H | TRANSM_L | TRANSM_3 },
+  {  600, MOT_SPEED_L | TRANSM_H | TRANSM_1 },
+  { 1000, MOT_SPEED_L | TRANSM_H | TRANSM_2 },
+  { 1200, MOT_SPEED_H | TRANSM_H | TRANSM_1 },
+  { 1600, MOT_SPEED_L | TRANSM_H | TRANSM_3 },
+  { 2000, MOT_SPEED_H | TRANSM_H | TRANSM_2 },
+  { 3200, MOT_SPEED_H | TRANSM_H | TRANSM_3 },
+  { 0 }
+};
+
+// find matching table line
+const speed_map_t *find_speed_match(int dest, int alg) {
+  const speed_map_t *item;
+
+  for (item = speed_map; (item + 1)->rpm != 0; item++) {
+    // mode: find next greater match
+    if (alg > 0) {
+      if (item->rpm >= dest) {
+        break;
+      }
+      continue;
+    }
+
+    // mode: find next lesser match
+    if (alg < 0) {
+      if ((item + 1)->rpm > dest) {
+        break;
+      }
+      continue;
+    }
+
+    // mode: find best match
+    if (((item->rpm + (item + 1)->rpm) >> 1) >= dest) {
+      break;
+    }
+  }
+
+  return item;
+}
+
+EXTRA_SETUP() {
+  data.mode_is_auto_old = 0;
+  data.state = 0;
+  data.state_mot_speed = 0;
+  data.state_transm = 0;
+  data.state_ack = 0;
+
+  return 0;
+}
+
+FUNCTION(_) {
+  int target;
+  const speed_map_t *item;
+
+  // force gear request if prog is started
+  if (mode_is_auto && !data.mode_is_auto_old) {
+    data.state_transm = 0;
+    data.state_ack &= ~TRANSM_MASK;
+  }
+  data.mode_is_auto_old = mode_is_auto;
+
+  // get abs integer value of speed
+  target = (int)spindle_speed;
+  if (target < 0) {
+    target = -target;
+  }
+
+  // find match if spindle is on
+  if (target != 0 && spindle_on) {
+    item = find_speed_match(target, method);
+
+    // update informational signals
+    speed_target = target;
+    speed_result = item->rpm;
+
+    // update state selector
+    data.state = item->state;
+  }
+
+  // update state selector outputs
+  mot_speed_h = (data.state & MOT_SPEED_H) ? 1 : 0;
+  mot_speed_l = (data.state & MOT_SPEED_L) ? 1 : 0;
+
+  transm_h = (data.state & TRANSM_H) ? 1 : 0;
+  transm_l = (data.state & TRANSM_L) ? 1 : 0;
+
+  transm_1 = (data.state & TRANSM_1) ? 1 : 0;
+  transm_2 = (data.state & TRANSM_2) ? 1 : 0;
+  transm_3 = (data.state & TRANSM_3) ? 1 : 0;
+
+  // request motor speed change and wait for ack
+  if (mot_speed_ack) {
+    data.state_ack = (data.state_ack & ~MOT_SPEED_MASK) | data.state_mot_speed;
+    mot_speed_req = 0;
+  } else {
+    if (data.state_mot_speed != (data.state & MOT_SPEED_MASK)) {
+      data.state_mot_speed = (data.state & MOT_SPEED_MASK);
+      mot_speed_req = 1;
+    }
+  }
+
+  // request transmission gear change and wait for ack
+  if (transm_ack) {
+    data.state_ack = (data.state_ack & ~TRANSM_MASK) | data.state_transm;
+    transm_req = 0;
+  } else {
+    if (data.state_transm != (data.state & TRANSM_MASK)) {
+      data.state_transm = (data.state & TRANSM_MASK);
+      transm_req = 1;
+    }
+  }
+
+  // ready signal for spindle module
+  ready = (data.state_ack == data.state) ? 1 : 0;
+}
+
