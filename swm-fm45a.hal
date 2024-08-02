@@ -1,0 +1,186 @@
+###########################################################
+#
+# Master HAL file for SWM FM45A DRO Profi
+#
+# Created 2014/10/21 by Sascha Ittner
+#
+# Global HAL configuration file
+#
+###########################################################
+
+###########################################################
+# Setup
+###########################################################
+
+# load kinematiks and motion controller (realtime)
+loadrt trivkins
+loadrt [EMCMOT]EMCMOT servo_period_nsec=[EMCMOT]SERVO_PERIOD num_joints=[TRAJ]AXES
+
+# load ethercat config parser
+loadusr -W lcec_conf ethercat-conf.xml
+# load ethercat realtime module
+loadrt lcec
+
+# load swm_fm45a specific modules
+loadrt swm_fm45a_err
+loadrt swm_fm45a_jog
+loadrt swm_fm45a_gearsel
+loadrt swm_fm45a_transm
+loadrt swm_fm45a_motspeed
+loadrt swm_fm45a_spindle
+
+# load position controller PID instances
+loadrt pid names=x-pid,y-pid,z-pid 
+
+loadrt timedelta count=1
+
+# load pendant driver
+loadusr -W usbpend
+
+###########################################################
+# Functions
+#
+# specify the thead and the order where component functions
+# will be called. Since we need no high speed pulse generation
+# like soft pwm and stepper generator, only the servo thread
+# is used (wich allows floating point calculations and runs
+# at 1ms cycle time per default). Functions be called in the
+# order of definition.
+#
+# Base thread could be used in simple systems for high speed
+# tasks like mentioned above. Base thread only supports
+# integer arithmetics.
+#
+###########################################################
+
+addf timedelta.0 servo-thread
+
+addf lcec.read-all servo-thread
+
+addf motion-command-handler servo-thread
+addf motion-controller servo-thread
+
+addf swm-fm45a-err servo-thread
+addf swm-fm45a-jog servo-thread
+addf swm-fm45a-gearsel servo-thread
+addf swm-fm45a-transm servo-thread
+addf swm-fm45a-motspeed servo-thread
+addf swm-fm45a-spindle servo-thread
+
+addf x-pid.do-pid-calcs servo-thread
+addf y-pid.do-pid-calcs servo-thread
+addf z-pid.do-pid-calcs servo-thread
+
+addf lcec.write-all servo-thread
+
+###########################################################
+# E-Stop
+###########################################################
+
+net voltage-on => swm-fm45a-err.voltage-on
+net emc-enable <= swm-fm45a-err.emc-enable
+net emc-on => swm-fm45a-err.emc-on
+
+net ec-slaves-responding => swm-fm45a-err.ec-slaves-responding
+net ec-link-up => swm-fm45a-err.ec-link-up
+net ec-all-op => swm-fm45a-err.ec-all-op
+
+net motor-fault => swm-fm45a-err.motor-fault
+
+net emc-enable => iocontrol.0.emc-enable-in
+
+###########################################################
+# HALUI interface
+###########################################################
+
+net emc-on <= halui.machine.is-on
+net mode-is-auto <= halui.mode.is-auto
+
+net jog-btn-step => halui.program.pause
+
+net touch-x => halui.mdi-command-00
+net touch-y => halui.mdi-command-01
+net touch-z => halui.mdi-command-02
+
+net spindle-ctrl-75 => halui.mdi-command-03
+net spindle-ctrl-150 => halui.mdi-command-04
+net spindle-ctrl-180 => halui.mdi-command-05
+net spindle-ctrl-280 => halui.mdi-command-06
+net spindle-ctrl-360 => halui.mdi-command-07
+net spindle-ctrl-560 => halui.mdi-command-08
+net spindle-ctrl-600 => halui.mdi-command-09
+net spindle-ctrl-1000 => halui.mdi-command-10
+net spindle-ctrl-1200 => halui.mdi-command-11
+net spindle-ctrl-1600 => halui.mdi-command-12
+net spindle-ctrl-2000 => halui.mdi-command-13
+net spindle-ctrl-3200 => halui.mdi-command-14
+net spindle-ctrl-cw => halui.mdi-command-15
+net spindle-ctrl-ccw => halui.mdi-command-16
+net spindle-ctrl-stop => halui.mdi-command-17
+
+###########################################################
+# Joging
+###########################################################
+
+net x-homed => swm-fm45a-jog.x-homed
+net y-homed => swm-fm45a-jog.y-homed
+net z-homed => swm-fm45a-jog.z-homed
+
+net jog-btn-x => swm-fm45a-jog.btn-x
+net jog-btn-y => swm-fm45a-jog.btn-y
+net jog-btn-z => swm-fm45a-jog.btn-z
+net jog-btn-1-00 => swm-fm45a-jog.btn-1-00
+net jog-btn-0-10 => swm-fm45a-jog.btn-0-10
+net jog-btn-0-01 => swm-fm45a-jog.btn-0-01
+net jog-btn-set-x => swm-fm45a-jog.btn-set-x
+net jog-btn-set-y => swm-fm45a-jog.btn-set-y
+net jog-btn-set-z => swm-fm45a-jog.btn-set-z
+
+setp swm-fm45a-jog.scale-1-00 0.500
+setp swm-fm45a-jog.scale-0-10 0.050
+setp swm-fm45a-jog.scale-0-01 0.005
+
+net jog-ena-x <= swm-fm45a-jog.ena-x
+net jog-ena-y <= swm-fm45a-jog.ena-y
+net jog-ena-z <= swm-fm45a-jog.ena-z
+net jog-scale <= swm-fm45a-jog.scale
+
+net jog-sel-x <= swm-fm45a-jog.sel-0-01
+net jog-sel-y <= swm-fm45a-jog.sel-0-10
+net jog-sel-z <= swm-fm45a-jog.sel-1-00
+
+net touch-x <= swm-fm45a-jog.touch-x
+net touch-y <= swm-fm45a-jog.touch-y
+net touch-z <= swm-fm45a-jog.touch-z
+
+# X axis
+setp axis.0.jog-vel-mode 1
+net jog-scale => axis.0.jog-scale
+net jog-ena-x => axis.0.jog-enable
+net jog-enc-pos => axis.0.jog-counts
+
+# Y axis
+setp axis.1.jog-vel-mode 1
+net jog-scale => axis.1.jog-scale
+net jog-ena-y => axis.1.jog-enable
+net jog-enc-pos => axis.1.jog-counts
+
+# Z axis
+setp axis.2.jog-vel-mode 1
+net jog-scale => axis.2.jog-scale
+net jog-ena-z => axis.2.jog-enable
+net jog-enc-pos => axis.2.jog-counts
+
+###########################################################
+# Toolchange
+#
+# Manual tool change window
+#
+###########################################################
+
+loadusr -W hal_manualtoolchange
+net tool-change iocontrol.0.tool-change => hal_manualtoolchange.change
+net tool-changed iocontrol.0.tool-changed <= hal_manualtoolchange.changed
+net tool-number iocontrol.0.tool-prep-number => hal_manualtoolchange.number
+net tool-prepare-loopback iocontrol.0.tool-prepare => iocontrol.0.tool-prepared
+

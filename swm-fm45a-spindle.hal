@@ -1,0 +1,91 @@
+###########################################################
+#
+# Spindle HAL file for SWM FM45A DRO Profi
+#
+# Created 2014/10/21 by Sascha Ittner
+#
+# Spindle Interface
+#
+###########################################################
+
+###########################################################
+# motion interface
+###########################################################
+
+net spindle-on <= motion.spindle-on
+net spindle-cw <= motion.spindle-forward
+net spindle-ccw <= motion.spindle-reverse
+net spindle-speed-cmd <= motion.spindle-speed-out
+net spindle-at-speed => motion.spindle-at-speed
+
+# coolant
+net coolant-on <= iocontrol.0.coolant-flood
+
+###########################################################
+# gear selection logic
+###########################################################
+
+net mode-is-auto => swm-fm45a-gearsel.mode-is-auto
+
+net spindle-on => swm-fm45a-gearsel.spindle-on
+net spindle-speed-cmd => swm-fm45a-gearsel.spindle-speed
+net spindle-speed-tgt <= swm-fm45a-gearsel.speed-target
+net spindle-speed-res <= swm-fm45a-gearsel.speed-result
+net gearsel-ready <= swm-fm45a-gearsel.ready
+
+net mot-speed-req <= swm-fm45a-gearsel.mot-speed-req
+net mot-speed-ack => swm-fm45a-gearsel.mot-speed-ack
+net mot-speed-h <= swm-fm45a-gearsel.mot-speed-h
+net mot-speed-l <= swm-fm45a-gearsel.mot-speed-l
+
+net transm-req <= swm-fm45a-gearsel.transm-req
+net transm-ack => swm-fm45a-gearsel.transm-ack
+net transm-h <= swm-fm45a-gearsel.transm-h
+net transm-l <= swm-fm45a-gearsel.transm-l
+net transm-1 <= swm-fm45a-gearsel.transm-1
+net transm-2 <= swm-fm45a-gearsel.transm-2
+net transm-3 <= swm-fm45a-gearsel.transm-3
+
+###########################################################
+# manual transmission operation interface
+###########################################################
+
+net transm-req => swm-fm45a-transm.req
+net transm-ack <= swm-fm45a-transm.ack
+net transm-ui-ack => swm-fm45a-transm.ui-ack
+net jog-btn-cont => swm-fm45a-transm.hw-ack
+net transm-h => swm-fm45a-transm.transm-h
+net transm-l => swm-fm45a-transm.transm-l
+net transm-1 => swm-fm45a-transm.transm-1
+net transm-2 => swm-fm45a-transm.transm-2
+net transm-3 => swm-fm45a-transm.transm-3
+net transm-ui-h <= swm-fm45a-transm.ui-h
+net transm-ui-l <= swm-fm45a-transm.ui-l
+net transm-ui-1 <= swm-fm45a-transm.ui-1
+net transm-ui-2 <= swm-fm45a-transm.ui-2
+net transm-ui-3 <= swm-fm45a-transm.ui-3
+
+###########################################################
+# two stage motor speed control
+###########################################################
+
+net spindle-is-off => swm-fm45a-motspeed.spindle-off
+net mot-speed-req => swm-fm45a-motspeed.req
+net mot-speed-ack <= swm-fm45a-motspeed.ack
+net mot-speed-h => swm-fm45a-motspeed.speed-h
+net mot-speed-l => swm-fm45a-motspeed.speed-l
+net mot-ctl-speed-h <= swm-fm45a-motspeed.out-h
+net mot-ctl-speed-l <= swm-fm45a-motspeed.out-l
+
+###########################################################
+# spindle direction control
+###########################################################
+
+net spindle-on => swm-fm45a-spindle.spindle-on
+net spindle-speed-cmd => swm-fm45a-spindle.spindle-speed
+net spindle-at-speed <= swm-fm45a-spindle.spindle-at-speed
+net spindle-is-off <= swm-fm45a-spindle.spindle-is-off
+net gearsel-ready => swm-fm45a-spindle.gearsel-ready
+net mot-ctl-cw <= swm-fm45a-spindle.out-cw
+net mot-ctl-ccw <= swm-fm45a-spindle.out-ccw
+

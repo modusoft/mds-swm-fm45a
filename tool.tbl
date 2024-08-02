@@ -1,0 +1,18 @@
+T1 P1 Z0.511 D0.125 ;1/8 end mill 
+T2 P2 Z0.1 D0.0625 ;1/16 end mill 
+T3 P3 Z1.273 D0.201 ;#7 tap drill 
+T99999 P99999 Z0.1 ;big tool number 
+T14 P14 ;angelegt 20170901 
+T11 P11 ;angelegt 20170901 
+T4 P4 ;angelegt 20170901 
+T5 P5 ;angelegt 20170901 
+T6 P6 ;angelegt 20170901 
+T7 P7 ;angelegt 20170901 
+T8 P8 ;angelegt 20170901 
+T9 P9 ;angelegt 20170901 
+T10 P10 ;angelegt 20170901 
+T12 P12 ;angelegt 20170901 
+T13 P13 ;angelegt 20170901 
+T15 P15 ;angelegt 20170901 
+T17 P17 ;angelegt 20171208 
+T16 P16 ;Angelegt 20190312 

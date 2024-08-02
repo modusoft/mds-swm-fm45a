@@ -1,0 +1,49 @@
+###########################################################
+#
+# Post GUI loading HAL file for SWM FM45A DRO Profi
+#
+# Created 2014/11/12 by Sascha Ittner
+#
+###########################################################
+
+###########################################################
+# transmission request/info
+###########################################################
+
+net transm-ui-1 => pyvcp.transm-req-1
+net transm-ui-2 => pyvcp.transm-req-2
+net transm-ui-3 => pyvcp.transm-req-3
+net transm-ui-h => pyvcp.transm-req-h
+net transm-ui-l => pyvcp.transm-req-l
+net transm-ui-ack <= pyvcp.transm-ack
+net spindle-speed-res => pyvcp.transm-result-rpm
+net spindle-speed-tgt => pyvcp.transm-target-rpm
+
+###########################################################
+# jog resolution info
+###########################################################
+
+net jog-sel-x => pyvcp.jog-sel-0-01
+net jog-sel-y => pyvcp.jog-sel-0-10
+net jog-sel-z => pyvcp.jog-sel-1-00
+
+###########################################################
+# spindle control
+###########################################################
+
+net spindle-ctrl-75 <= pyvcp.spindle-ctrl-75
+net spindle-ctrl-150 <= pyvcp.spindle-ctrl-150
+net spindle-ctrl-180 <= pyvcp.spindle-ctrl-180
+net spindle-ctrl-280 <= pyvcp.spindle-ctrl-280
+net spindle-ctrl-360 <= pyvcp.spindle-ctrl-360
+net spindle-ctrl-560 <= pyvcp.spindle-ctrl-560
+net spindle-ctrl-600 <= pyvcp.spindle-ctrl-600
+net spindle-ctrl-1000 <= pyvcp.spindle-ctrl-1000
+net spindle-ctrl-1200 <= pyvcp.spindle-ctrl-1200
+net spindle-ctrl-1600 <= pyvcp.spindle-ctrl-1600
+net spindle-ctrl-2000 <= pyvcp.spindle-ctrl-2000
+net spindle-ctrl-3200 <= pyvcp.spindle-ctrl-3200
+net spindle-ctrl-cw <= pyvcp.spindle-ctrl-cw
+net spindle-ctrl-ccw <= pyvcp.spindle-ctrl-ccw
+net spindle-ctrl-stop <= pyvcp.spindle-ctrl-stop
+
