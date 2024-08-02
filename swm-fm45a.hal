@@ -13,8 +13,9 @@
 ###########################################################
 
 # load kinematiks and motion controller (realtime)
-loadrt trivkins
-loadrt [EMCMOT]EMCMOT servo_period_nsec=[EMCMOT]SERVO_PERIOD num_joints=[TRAJ]AXES
+loadrt [KINS]KINEMATICS
+#autoconverted  trivkins
+loadrt [EMCMOT]EMCMOT servo_period_nsec=[EMCMOT]SERVO_PERIOD num_joints=[KINS]JOINTS
 
 # load ethercat config parser
 loadusr -W lcec_conf ethercat-conf.xml
@@ -154,22 +155,25 @@ net touch-y <= swm-fm45a-jog.touch-y
 net touch-z <= swm-fm45a-jog.touch-z
 
 # X axis
-setp axis.0.jog-vel-mode 1
-net jog-scale => axis.0.jog-scale
-net jog-ena-x => axis.0.jog-enable
-net jog-enc-pos => axis.0.jog-counts
+setp joint.0.jog-vel-mode 1
+setp axis.x.jog-vel-mode 1
+net jog-scale => joint.0.jog-scale axis.x.jog-scale
+net jog-ena-x => axis.x.jog-enable
+net jog-enc-pos => joint.0.jog-counts axis.x.jog-counts
 
 # Y axis
-setp axis.1.jog-vel-mode 1
-net jog-scale => axis.1.jog-scale
-net jog-ena-y => axis.1.jog-enable
-net jog-enc-pos => axis.1.jog-counts
+setp joint.1.jog-vel-mode 1
+setp axis.y.jog-vel-mode 1
+net jog-scale => joint.1.jog-scale axis.y.jog-scale
+net jog-ena-y => axis.y.jog-enable
+net jog-enc-pos => joint.1.jog-counts axis.y.jog-counts
 
 # Z axis
-setp axis.2.jog-vel-mode 1
-net jog-scale => axis.2.jog-scale
-net jog-ena-z => axis.2.jog-enable
-net jog-enc-pos => axis.2.jog-counts
+setp joint.2.jog-vel-mode 1
+setp axis.z.jog-vel-mode 1
+net jog-scale => joint.2.jog-scale axis.z.jog-scale
+net jog-ena-z => axis.z.jog-enable
+net jog-enc-pos => joint.2.jog-counts axis.z.jog-counts
 
 ###########################################################
 # Toolchange
