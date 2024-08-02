@@ -46,18 +46,18 @@ net z-brake => lcec.0.D6.dout-6
 ###########################################################
 
 net jog-enc-pos <= usbpend.enc-pos
-net jog-btn-x <= usbpend.btn-x
-net jog-btn-y <= usbpend.btn-y
-net jog-btn-z <= usbpend.btn-z
-net jog-btn-1-00 <= usbpend.btn-1-00
-net jog-btn-0-10 <= usbpend.btn-0-10
-net jog-btn-0-01 <= usbpend.btn-0-01
-net jog-btn-set-x <= usbpend.btn-set-x
-net jog-btn-set-y <= usbpend.btn-set-y
-net jog-btn-set-z <= usbpend.btn-set-z
-net jog-btn-cont <= usbpend.btn-cont
-net jog-btn-blank <= usbpend.btn-blank
-net jog-btn-step <= usbpend.btn-step
+net jog-btn-x <= usbpend.btn-a1
+net jog-btn-y <= usbpend.btn-b1
+net jog-btn-z <= usbpend.btn-c1
+net jog-btn-1-00 <= usbpend.btn-a2
+net jog-btn-0-10 <= usbpend.btn-b2
+net jog-btn-0-01 <= usbpend.btn-c2
+net jog-btn-set-x <= usbpend.btn-a3
+net jog-btn-set-y <= usbpend.btn-b3
+net jog-btn-set-z <= usbpend.btn-c3
+net jog-btn-cont <= usbpend.btn-a4
+net jog-btn-blank <= usbpend.btn-b4
+net jog-btn-step <= usbpend.btn-c4
 net jog-btn-aux-1 <= usbpend.btn-aux-1
 net jog-btn-aux-2 <= usbpend.btn-aux-2
 
